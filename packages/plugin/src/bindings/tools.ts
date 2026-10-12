@@ -62,6 +62,21 @@ export const GODOT_TOOLS: readonly GodotToolDefinition[] = [
     "Activate a Godot session by id",
     "session_activate",
   ),
+  makeTool(
+    "godot_capture_viewport",
+    "Capture viewport screenshot as base64 PNG (Resource form: godot://viewport/capture; stale fallback past 1000ms)",
+    "capture_viewport",
+  ),
+  makeTool(
+    "godot_shader_generate",
+    "Generate spatial/canvas-item shader with uniforms",
+    "generate_shader",
+  ),
+  makeTool(
+    "godot_theme_apply_style",
+    "Inspect Theme/StyleBox overrides and apply style (font/color/StyleBoxFlat)",
+    "apply_stylebox",
+  ),
 ];
 
 // Transform-compatible: pass directly to ctx.tool.transform(editor => ...).
