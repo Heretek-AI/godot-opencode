@@ -1,0 +1,46 @@
+name: Test gate
+
+# Every push to main and every PR: lint/typecheck, unit + harness tests, and
+# the engine GDScript parse gate. The parse gate downloads a pinned Godot
+# binary (same major line the release was live-verified on); without it the
+# mock-only suite cannot catch GDScript parse errors (see #10).
+# Binary install failures must fail this workflow loudly — never skip silent.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  GODOT_VERSION: 4.7.2-stable
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Lint + typecheck
+        run: bun run check
+
+      - name: Unit + harness tests (explicit paths; never bare sweeps of review/)
+        run: bun test ./packages/plugin/test/ ./companion/tests/
+
+      - name: Install Godot engine
+        run: |
+          curl -sSL -o /tmp/godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d /tmp/godot-bin
+          echo "/tmp/godot-bin" >> "$GITHUB_PATH"
+
+      - name: Engine GDScript parse gate (all 13 .gd files)
+        run: GODOT_BIN="Godot_v${GODOT_VERSION}_linux.x86_64" scripts/check-gdscript.sh
