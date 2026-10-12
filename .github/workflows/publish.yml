@@ -1,0 +1,54 @@
+name: Publish to npm (OIDC trusted publishing)
+
+# Publishes @heretek-ai/godot-opencode + @heretek-ai/godot-testkit whenever a
+# GitHub Release is published. No long-lived npm tokens: authentication uses
+# npm trusted publishing (OIDC), so this workflow must NOT set NODE_AUTH_TOKEN.
+# One-time npm-side setup (per package, on npmjs.com):
+#   Package Settings > Trusted Publisher > Manage Trusted Publishers >
+#   Add GitHub Actions publisher: org Heretek-AI, repo godot-opencode,
+#   workflow publish.yml (no environment restriction).
+# Tag/version contract: release tag must be v<version> matching
+# packages/*/package.json (e.g. tag v1.0.1 for version 1.0.1).
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Node with npm registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Require npm with OIDC support
+        run: npm install --global npm@latest
+
+      - name: Guard tag matches package versions
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          EXPECTED="${TAG#v}"
+          PLUGIN="$(node -p "require('./packages/plugin/package.json').version")"
+          TESTKIT="$(node -p "require('./packages/testkit/package.json').version")"
+          test "$PLUGIN" = "$EXPECTED" || { echo "plugin $PLUGIN != tag $TAG"; exit 1; }
+          test "$TESTKIT" = "$EXPECTED" || { echo "testkit $TESTKIT != tag $TAG"; exit 1; }
+
+      - name: Publish @heretek-ai/godot-opencode
+        run: npm publish --provenance --access public
+        working-directory: packages/plugin
+
+      - name: Publish @heretek-ai/godot-testkit
+        run: npm publish --provenance --access public
+        working-directory: packages/testkit
