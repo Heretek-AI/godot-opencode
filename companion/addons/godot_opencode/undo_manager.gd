@@ -66,8 +66,21 @@ func _undo_reinsert_by_path(scene_root: Node, parent_path: String, node: Node, i
 
 ## Rename the node at `node_path`. Undo resolves the node by its NEW path
 ## (post-rename) so a rename-then-reorder sequence still finds it.
+## Node-name rule (verified against Godot 4.7): non-empty, and none of the
+## characters the engine silently rewrites on add_child (":", "/", ".",
+## "@", '"', "%"). Rejected names fail closed with INVALID_PARAMS instead
+## of being stored mangled.
+static func is_valid_node_name(value: String) -> bool:
+	if value.is_empty():
+		return false
+	for ch in [":", "/", ".", "@", "\"", "%"]:
+		if ch in value:
+			return false
+	return true
+
+
 func rename_node_by_path(scene_root: Node, node_path: String, new_name: String) -> Dictionary:
-	if new_name.is_empty() or not new_name.is_valid_node_name():
+	if not is_valid_node_name(new_name):
 		return {"error": {"code": "INVALID_PARAMS", "message": "Invalid node name: %s" % new_name}}
 	var target := _resolve_by_path(scene_root, node_path)
 	if target == null:

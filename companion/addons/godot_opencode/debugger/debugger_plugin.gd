@@ -19,19 +19,20 @@ var _pending_queries: Dictionary = {}
 
 
 func _setup_session(session_id: int) -> void:
-	var session := get_session(session_id)
-	if session == null:
-		return
-	session.register_message_capture(
-		CAPTURE_CHANNEL,
-		func(message: StringName, data: Array) -> bool:
-			return _on_capture(message, data)
-	)
-	_sessions.append(session_id)
+	if not _sessions.has(session_id):
+		_sessions.append(session_id)
 
 
-func _has_capture() -> void:
-	_sessions.clear()
+## Engine capture entry point: the editor routes channel traffic to this
+## plugin when _has_capture reports the channel as handled.
+func _capture(message: String, data: Array, _session_id: int) -> bool:
+	return _on_capture(message, data)
+
+
+## EditorDebuggerPlugin virtual (parent: `_has_capture(String) -> bool`):
+## report whether this plugin captures the given channel.
+func _has_capture(capture: String) -> bool:
+	return capture == CAPTURE_CHANNEL
 
 
 ## Engine capture callback. Returns true when the message was consumed.

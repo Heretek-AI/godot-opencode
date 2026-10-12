@@ -37,7 +37,10 @@ var dispatcher = null
 
 
 func _ready() -> void:
-	set_process(false)
+	# NOTE: _ready runs AFTER the parent plugin's _enter_tree (which calls
+	# startup()), so this must not force processing off — derive it from the
+	# actual listen state instead.
+	set_process(_server.is_listening())
 
 
 ## Start listening. `capability_path` points at the 9500.json record.
@@ -51,7 +54,7 @@ func startup(capability_path: String) -> int:
 	if not _is_ws_token(_ws_capability):
 		_ws_capability = ""
 		return ERR_FILE_CORRUPT
-	var err := _server.listen(BRIDGE_PORT, "127.0.0.1")
+	var err: int = _server.listen(BRIDGE_PORT, "127.0.0.1")
 	if err != OK:
 		return err
 	set_process(true)
@@ -98,7 +101,7 @@ func _poll_peers() -> void:
 		if not (peer is WebSocketPeer):
 			continue
 		peer.poll()
-		var state := peer.get_ready_state()
+		var state: int = peer.get_ready_state()
 		if state == WebSocketPeer.STATE_CLOSED:
 			_authenticated.erase(peer.get_instance_id())
 			continue
@@ -151,7 +154,9 @@ func _forward_command_frame(peer_id: int, raw: String) -> void:
 
 ## Route one dispatcher response to the peer that issued its request_id.
 ## Returns false when the peer is gone (response dropped, never requeued).
-func send_response(response: Dictionary) -> bool:	var peer := _peer_for_request(str(response.get("request_id", "")))
+## (Multiline body: Godot 4.7 rejects a same-line suite after the colon here.)
+func send_response(response: Dictionary) -> bool:
+	var peer := _peer_for_request(str(response.get("request_id", "")))
 	if peer == null:
 		return false
 	if peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
