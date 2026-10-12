@@ -12,12 +12,14 @@ const UndoManager := preload("res://addons/godot_opencode/undo_manager.gd")
 const NodeHandler := preload("res://addons/godot_opencode/handlers/node_handler.gd")
 const SignalHandler := preload("res://addons/godot_opencode/handlers/signal_handler.gd")
 const ResourceHandler := preload("res://addons/godot_opencode/handlers/resource_handler.gd")
+const DebuggerPlugin := preload("res://addons/godot_opencode/debugger/debugger_plugin.gd")
 
 const DEFAULT_CAPABILITY_DIR := "~/.config/opencode/godot/capabilities"
 const BRIDGE_PORT := 9500
 
 var _connection: Node = null
 var _dispatcher: RefCounted = null
+var _debugger_plugin: EditorDebuggerPlugin = null
 
 
 func _enter_tree() -> void:
@@ -33,12 +35,18 @@ func _enter_tree() -> void:
 	_connection.name = "GodotOpenCodeConnection"
 	_connection.dispatcher = _dispatcher
 	add_child(_connection)
+	_debugger_plugin = DebuggerPlugin.new()
+	_debugger_plugin.forward_target = _connection
+	add_debugger_plugin(_debugger_plugin)
 	var err := _connection.startup(_capability_record_path())
 	if err != OK:
 		push_warning("GodotOpenCode: bridge not listening (%s)" % error_string(err))
 
 
 func _exit_tree() -> void:
+	if _debugger_plugin != null and is_instance_valid(_debugger_plugin):
+		remove_debugger_plugin(_debugger_plugin)
+	_debugger_plugin = null
 	if _connection != null and is_instance_valid(_connection):
 		_connection.shutdown()
 		remove_child(_connection)

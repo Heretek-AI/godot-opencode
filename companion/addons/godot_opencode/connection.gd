@@ -151,8 +151,7 @@ func _forward_command_frame(peer_id: int, raw: String) -> void:
 
 ## Route one dispatcher response to the peer that issued its request_id.
 ## Returns false when the peer is gone (response dropped, never requeued).
-func send_response(response: Dictionary) -> bool:
-	var peer := _peer_for_request(str(response.get("request_id", "")))
+func send_response(response: Dictionary) -> bool:	var peer := _peer_for_request(str(response.get("request_id", "")))
 	if peer == null:
 		return false
 	if peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
@@ -168,6 +167,23 @@ func _peer_for_request(request_id: String) -> WebSocketPeer:
 		if peer is WebSocketPeer and peer.get_instance_id() == peer_id:
 			return peer
 	return null
+
+
+## Broadcast one event envelope to every authenticated open peer.
+## Used by the debugger bridge for out-of-band game traffic.
+func send_event(event_name: String, data: Dictionary = {}) -> bool:
+	var envelope := {"type": "event", "event": event_name, "data": data}
+	var sent := false
+	for peer in _peers:
+		if not (peer is WebSocketPeer):
+			continue
+		if peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
+			continue
+		if not bool(_authenticated.get(peer.get_instance_id(), false)):
+			continue
+		peer.send_text(JSON.stringify(envelope))
+		sent = true
+	return sent
 
 
 func _reject(peer: WebSocketPeer, peer_id: int, reason: String) -> void:
