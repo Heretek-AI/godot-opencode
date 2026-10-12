@@ -28,6 +28,9 @@ var _server := TCPServer.new()
 var _ws_capability := ""
 var _peers: Array = []
 var _authenticated: Dictionary = {}
+## request_id -> peer instance id, so dispatcher responses route back to
+## the peer that sent the command.
+var _request_peers: Dictionary = {}
 ## Set by plugin.gd. Authenticated command frames are enqueued here and
 ## executed by dispatcher.tick() under the per-frame budget (ticket 2.2).
 var dispatcher = null
@@ -136,12 +139,35 @@ func _handle_handshake_frame(peer: WebSocketPeer, peer_id: int, raw: String) -> 
 	peer.send_text(JSON.stringify({"type": "handshake_ack", "ok": true}))
 
 
-func _forward_command_frame(_peer_id: int, raw: String) -> void:
+func _forward_command_frame(peer_id: int, raw: String) -> void:
 	if dispatcher == null:
 		return
 	var parsed = JSON.parse_string(raw)
 	if parsed is Dictionary:
+		if parsed.get("request_id") is String:
+			_request_peers[str(parsed["request_id"])] = peer_id
 		dispatcher.enqueue(parsed)
+
+
+## Route one dispatcher response to the peer that issued its request_id.
+## Returns false when the peer is gone (response dropped, never requeued).
+func send_response(response: Dictionary) -> bool:
+	var peer := _peer_for_request(str(response.get("request_id", "")))
+	if peer == null:
+		return false
+	if peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return false
+	peer.send_text(JSON.stringify(response))
+	_request_peers.erase(str(response.get("request_id", "")))
+	return true
+
+
+func _peer_for_request(request_id: String) -> WebSocketPeer:
+	var peer_id := int(_request_peers.get(request_id, 0))
+	for peer in _peers:
+		if peer is WebSocketPeer and peer.get_instance_id() == peer_id:
+			return peer
+	return null
 
 
 func _reject(peer: WebSocketPeer, peer_id: int, reason: String) -> void:
