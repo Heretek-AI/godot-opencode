@@ -1,6 +1,15 @@
 {
-  "name": "@opencode/godot-testkit",
-  "version": "0.1.0",
+  "name": "@heretek-ai/godot-testkit",
+  "version": "1.0.0",
+  "description": "Shared test helpers for godot-opencode (mock transports, fixtures)",
+  "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts"
+  "main": "./src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Heretek-AI/godot-opencode.git"
+  },
+  "homepage": "https://github.com/Heretek-AI/godot-opencode#readme",
+  "keywords": ["godot", "opencode", "testing"],
+  "files": ["src", "README.md", "LICENSE"]
 }

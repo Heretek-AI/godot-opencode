@@ -1,8 +1,17 @@
 {
-  "name": "@opencode/godot",
-  "version": "0.1.0",
+  "name": "@heretek-ai/godot-opencode",
+  "version": "1.0.0",
+  "description": "Godot Engine OpenCode v2 native plugin — zero-Python transport, verification, studio swarm and vision (Bun/TypeScript)",
+  "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Heretek-AI/godot-opencode.git"
+  },
+  "homepage": "https://github.com/Heretek-AI/godot-opencode#readme",
+  "keywords": ["godot", "opencode", "game-dev", "editor-plugin"],
+  "files": ["src", "README.md", "LICENSE"],
   "scripts": {
     "test": "bun test test/"
   },

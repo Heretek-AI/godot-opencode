@@ -4,7 +4,7 @@ Zero-Python TypeScript transport + GDScript editor companion.
 
 ## Structure
 
-- `packages/plugin/` — `@opencode/godot` OpenCode v2 Effect plugin (Bun/TypeScript).
+- `packages/plugin/` — `@heretek-ai/godot-opencode` OpenCode v2 Effect plugin (Bun/TypeScript).
 - `packages/testkit/` — shared test helpers.
 - `companion/` — Godot editor addon (`addons/godot_opencode/`).
 - `review/` — read-only reference material (never shipped).
