@@ -28,6 +28,9 @@ var _server := TCPServer.new()
 var _ws_capability := ""
 var _peers: Array = []
 var _authenticated: Dictionary = {}
+## Set by plugin.gd. Authenticated command frames are enqueued here and
+## executed by dispatcher.tick() under the per-frame budget (ticket 2.2).
+var dispatcher = null
 
 
 func _ready() -> void:
@@ -133,9 +136,12 @@ func _handle_handshake_frame(peer: WebSocketPeer, peer_id: int, raw: String) -> 
 	peer.send_text(JSON.stringify({"type": "handshake_ack", "ok": true}))
 
 
-func _forward_command_frame(_peer_id: int, _raw: String) -> void:
-	# Ticket 2.2 wires this into the dispatcher queue.
-	pass
+func _forward_command_frame(_peer_id: int, raw: String) -> void:
+	if dispatcher == null:
+		return
+	var parsed = JSON.parse_string(raw)
+	if parsed is Dictionary:
+		dispatcher.enqueue(parsed)
 
 
 func _reject(peer: WebSocketPeer, peer_id: int, reason: String) -> void:
