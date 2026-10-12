@@ -1,0 +1,16 @@
+{
+  "name": "godot-opencode",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "check": "biome check packages/ && tsc --noEmit",
+    "test": "bun test packages/",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.9.2",
+    "@types/bun": "^1.2.0"
+  }
+}
