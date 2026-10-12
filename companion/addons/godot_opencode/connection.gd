@@ -211,3 +211,78 @@ static func _read_capability_record(path: String) -> Dictionary:
 	if not (parsed.get("websocket") is String):
 		return {}
 	return {"websocket": str(parsed["websocket"])}
+
+
+## Cooperative transport servicing during a blocking exclusive run.
+##
+## The editor main thread is busy (e.g. a test run), so _process cannot
+## poll and the client's 20s keepalive would otherwise time the session
+## out mid-run. This pass polls every open peer directly: heartbeat frames
+## get an immediate pong, valid command frames are REJECTED (never queued,
+## never dispatched) with EDITOR_NOT_READY / EDITOR_TEST_RUNNING, and
+## anything else is dropped. `run_state` is caller-owned and carries the
+## cumulative "packets_serviced" counter; past EXCLUSIVE_RUN_PACKET_CAP the
+## peer is closed (bounded rejects, never unbounded stale buffering).
+enum ServiceStatus { SERVICED, DISCONNECTED, FLOODED }
+
+const EXCLUSIVE_RUN_PACKET_CAP := 2048
+const CLOSE_CODE_EXCLUSIVE_RUN_FLOOD := 1013
+
+
+func service_transport_during_exclusive_run(run_state: Dictionary) -> int:
+	var any_open := false
+	for peer in _peers:
+		if not (peer is WebSocketPeer):
+			continue
+		peer.poll()
+		if peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
+			continue
+		any_open = true
+		while peer.get_available_packet_count() > 0:
+			var count := int(run_state.get("packets_serviced", 0)) + 1
+			run_state["packets_serviced"] = count
+			if count > EXCLUSIVE_RUN_PACKET_CAP:
+				peer.close(CLOSE_CODE_EXCLUSIVE_RUN_FLOOD, "command flood during exclusive run")
+				return ServiceStatus.FLOODED
+			_service_handle_frame(peer, peer.get_packet().get_string_from_utf8())
+	if not any_open:
+		return ServiceStatus.DISCONNECTED
+	return ServiceStatus.SERVICED
+
+
+func _service_handle_frame(peer: WebSocketPeer, raw: String) -> void:
+	var kind := _classify_service_frame(raw)
+	if kind == "heartbeat":
+		peer.send_text(JSON.stringify({"type": "pong"}))
+	elif kind == "command":
+		var parsed: Dictionary = JSON.parse_string(raw)
+		peer.send_text(JSON.stringify(_build_busy_reject(parsed)))
+	# "other" frames are dropped without dispatch.
+
+
+static func _classify_service_frame(raw: String) -> String:
+	var parsed = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		return "other"
+	if str(parsed.get("type", "")) == "ping":
+		return "heartbeat"
+	if str(parsed.get("method", "")) == "ping":
+		return "heartbeat"
+	if parsed.get("command") is String and parsed.get("request_id") is String:
+		return "command"
+	return "other"
+
+
+## Busy-reject envelope. The top-level code stays EDITOR_NOT_READY; the
+## EDITOR_TEST_RUNNING sub-code travels under error.data and is never
+## promoted into code.
+static func _build_busy_reject(parsed: Dictionary) -> Dictionary:
+	return {
+		"request_id": str(parsed.get("request_id", "")),
+		"status": "error",
+		"error": {
+			"code": "EDITOR_NOT_READY",
+			"message": "Rejected during exclusive run: %s was not executed. Retry when the run completes." % str(parsed.get("command", "")),
+			"data": {"sub_code": "EDITOR_TEST_RUNNING", "retryable": true},
+		},
+	}
