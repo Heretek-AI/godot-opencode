@@ -1,7 +1,7 @@
 {
   "name": "@heretek-ai/godot-opencode",
-  "version": "1.0.0",
-  "description": "Godot Engine OpenCode v2 native plugin — zero-Python transport, verification, studio swarm and vision (Bun/TypeScript)",
+  "version": "1.0.1",
+  "description": "Godot Engine OpenCode v2 native plugin \u2014 zero-Python transport, verification, studio swarm and vision (Bun/TypeScript)",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
