@@ -12,6 +12,9 @@ const UndoManager := preload("res://addons/godot_opencode/undo_manager.gd")
 const NodeHandler := preload("res://addons/godot_opencode/handlers/node_handler.gd")
 const SignalHandler := preload("res://addons/godot_opencode/handlers/signal_handler.gd")
 const ResourceHandler := preload("res://addons/godot_opencode/handlers/resource_handler.gd")
+const ShaderHandler := preload("res://addons/godot_opencode/handlers/shader_handler.gd")
+const ThemeHandler := preload("res://addons/godot_opencode/handlers/theme_handler.gd")
+const ViewportHandler := preload("res://addons/godot_opencode/viewport_handler.gd")
 const DebuggerPlugin := preload("res://addons/godot_opencode/debugger/debugger_plugin.gd")
 
 const DEFAULT_CAPABILITY_DIR := "~/.config/opencode/godot/capabilities"
@@ -28,9 +31,15 @@ func _enter_tree() -> void:
 	var nodes := NodeHandler.new(undo_manager)
 	var signals := SignalHandler.new(undo_manager)
 	var resources := ResourceHandler.new(undo_manager)
+	var shaders := ShaderHandler.new()
+	var themes := ThemeHandler.new(undo_manager)
+	var viewport := ViewportHandler.new()
 	_register_node_commands(nodes)
 	_register_signal_commands(signals)
 	_register_resource_commands(resources)
+	_register_shader_commands(shaders)
+	_register_theme_commands(themes)
+	_register_viewport_commands(viewport)
 	_connection = Connection.new()
 	_connection.name = "GodotOpenCodeConnection"
 	_connection.dispatcher = _dispatcher
@@ -82,6 +91,24 @@ func _register_resource_commands(handler: RefCounted) -> void:
 	_dispatcher.register("load_resource", handler.load_resource)
 	_dispatcher.register("inspect_resource", handler.inspect_resource)
 	_dispatcher.register("assign_resource", handler.assign_resource)
+
+
+func _register_shader_commands(handler: RefCounted) -> void:
+	_dispatcher.register("generate_shader", handler.generate_shader)
+	_dispatcher.register("inject_uniform", handler.inject_uniform)
+	_dispatcher.register("list_uniforms", handler.list_uniforms)
+
+
+func _register_theme_commands(handler: RefCounted) -> void:
+	_dispatcher.register("inspect_theme", handler.inspect_theme)
+	_dispatcher.register("apply_stylebox", handler.apply_stylebox)
+	_dispatcher.register("apply_font_override", handler.apply_font_override)
+
+
+func _register_viewport_commands(handler: RefCounted) -> void:
+	_dispatcher.register("capture_viewport", handler.capture_viewport)
+	_dispatcher.register("frame_aabb", handler.frame_aabb)
+	_dispatcher.register("capture_status", handler.capture_status)
 
 
 func _capability_record_path() -> String:
