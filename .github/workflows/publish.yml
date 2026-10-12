@@ -27,8 +27,9 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - name: Set up Node (no registry auth — OIDC mints its own token,
-        so setup-node must NOT inject NODE_AUTH_TOKEN)
+      # No registry-url here: setup-node would inject NODE_AUTH_TOKEN and
+      # block OIDC minting. The default registry + id-token permission is enough.
+      - name: Set up Node for OIDC publish
         uses: actions/setup-node@v4
         with:
           node-version: 24
