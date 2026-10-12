@@ -24,7 +24,7 @@ func search_resources(params: Dictionary) -> Dictionary:
 		var directory := queue.pop_back()
 		seen += 1
 		for entry in DirAccess.get_files_at(directory):
-			var full := directory.path_join(entry)
+			var full: String = directory.path_join(entry)
 			if not full.match("*" + pattern + "*"):
 				continue
 			if not type_hint.is_empty() and not _type_matches(full, type_hint):

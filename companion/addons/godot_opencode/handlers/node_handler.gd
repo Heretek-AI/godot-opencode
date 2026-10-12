@@ -62,7 +62,7 @@ func instantiate_scene(params: Dictionary) -> Dictionary:
 	var node_name := str(params.get("name", ""))
 	if not node_name.is_empty():
 		instance.name = node_name
-	var result := _undo.add_node_by_path(scene_root, str(params.get("parent_path", "/")), instance)
+	var result: Dictionary = _undo.add_node_by_path(scene_root, str(params.get("parent_path", "/")), instance)
 	if result.has("data"):
 		result["data"]["scene_path"] = scene_path
 	return result

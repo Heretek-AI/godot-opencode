@@ -23,6 +23,12 @@ const BRIDGE_PORT := 9500
 var _connection: Node = null
 var _dispatcher: RefCounted = null
 var _debugger_plugin: EditorDebuggerPlugin = null
+## Retain every RefCounted handler for the plugin's lifetime. Callables bound
+## to a RefCounted method do NOT extend its lifetime: once the constructing
+## local goes out of scope the object is freed and every dispatch fails with
+## `null::<method> (Callable)` (proven live on Godot 4.7). Nodes (_connection)
+## are kept alive by the scene tree; RefCounteds need this explicit anchor.
+var _handler_refs: Array = []
 
 
 func _enter_tree() -> void:
@@ -34,6 +40,7 @@ func _enter_tree() -> void:
 	var shaders := ShaderHandler.new()
 	var themes := ThemeHandler.new(undo_manager)
 	var viewport := ViewportHandler.new()
+	_handler_refs = [undo_manager, nodes, signals, resources, shaders, themes, viewport]
 	_register_node_commands(nodes)
 	_register_signal_commands(signals)
 	_register_resource_commands(resources)
@@ -47,7 +54,7 @@ func _enter_tree() -> void:
 	_debugger_plugin = DebuggerPlugin.new()
 	_debugger_plugin.forward_target = _connection
 	add_debugger_plugin(_debugger_plugin)
-	var err := _connection.startup(_capability_record_path())
+	var err: int = _connection.startup(_capability_record_path())
 	if err != OK:
 		push_warning("GodotOpenCode: bridge not listening (%s)" % error_string(err))
 

@@ -94,7 +94,11 @@ describe("ticket 2.6: out-of-band debugger and engine bridge", () => {
     expect(existsSync(PLUGIN)).toBe(true);
     const src = readFileSync(PLUGIN, "utf8");
     expect(src).toContain("extends EditorDebuggerPlugin");
-    expect(src).toContain("register_message_capture(");
+    // Live-verified on Godot 4.7: captures route via the _has_capture/_capture
+    // virtuals. (register_message_capture does not exist on
+    // EditorDebuggerSession — asserting it here pinned the bug.)
+    expect(src).toContain("func _has_capture(capture: String) -> bool");
+    expect(src).toContain("func _capture(");
     expect(src).toContain('CAPTURE_CHANNEL := "opencode"');
     expect(src).toContain("game_exception");
     expect(src).toContain("stack");
