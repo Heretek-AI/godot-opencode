@@ -27,11 +27,11 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - name: Set up Node with npm registry
+      - name: Set up Node (no registry auth — OIDC mints its own token,
+        so setup-node must NOT inject NODE_AUTH_TOKEN)
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org/
+          node-version: 24
 
       - name: Require npm with OIDC support
         run: npm install --global npm@latest
