@@ -1,6 +1,6 @@
 {
   "name": "@heretek-ai/godot-testkit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared test helpers for godot-opencode (mock transports, fixtures)",
   "license": "MIT",
   "type": "module",
